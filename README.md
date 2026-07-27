@@ -1,5 +1,7 @@
 # calcul-impot
 
+[![CI](https://github.com/financier-lab/calcul-impot/actions/workflows/ci.yml/badge.svg)](https://github.com/financier-lab/calcul-impot/actions/workflows/ci.yml)
+
 **Simulateurs fiscaux français open source, cités article par article.**
 
 Ce dépôt contient les règles de calcul qui alimentent les simulateurs de
