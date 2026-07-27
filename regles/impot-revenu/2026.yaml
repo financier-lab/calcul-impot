@@ -1,0 +1,186 @@
+# Impôt sur le revenu — barème 2026 (revenus 2025)
+#
+# Règles publicodes (https://publi.codes). Chaque paramètre porte ses
+# références légales : article du CGI, BOFiP, service-public.fr.
+#
+# Périmètre v1 : barème progressif + quotient familial (parts standard) +
+# plafonnement du quotient familial + décote. Ne modélise pas : parent isolé
+# (case T), demi-parts invalidité / anciens combattants, réductions et crédits
+# d'impôt, contribution sur les hauts revenus (CEHR). Le résultat `impôt . net`
+# est l'impôt avant réductions et crédits d'impôt.
+#
+# Chiffres : loi de finances pour 2026 (barème indexé de +0,9 %).
+
+foyer:
+  titre: Foyer fiscal
+  description: >-
+    Situation du foyer fiscal au sens de l'impôt sur le revenu (imposition
+    par foyer, CGI art. 6).
+
+foyer . revenu net imposable:
+  question: Quel est le revenu net imposable annuel du foyer ?
+  par défaut: 30000 €
+  description: >-
+    Revenu net imposable du foyer, après abattement de 10 % pour frais
+    professionnels (ou frais réels) sur les salaires.
+  références:
+    "Impôt sur le revenu (service-public.fr, fiche F1419)": https://www.service-public.fr/particuliers/vosdroits/F1419
+
+foyer . imposition commune:
+  question: Le foyer est-il un couple marié ou pacsé (imposition commune) ?
+  par défaut: non
+  références:
+    "CGI, art. 194": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033817781
+
+foyer . enfants à charge:
+  question: Combien d'enfants à charge compte le foyer ?
+  par défaut: 0
+  description: Enfants à charge ouvrant droit aux majorations standard de parts.
+
+foyer . parts de base:
+  titre: Parts de base du foyer
+  description: 1 part pour une personne seule, 2 parts pour un couple soumis à imposition commune.
+  variations:
+    - si: imposition commune
+      alors: 2
+    - sinon: 1
+  références:
+    "CGI, art. 194": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033817781
+
+foyer . parts enfants:
+  titre: Parts liées aux enfants à charge
+  description: >-
+    Une demi-part pour chacun des deux premiers enfants, une part entière par
+    enfant à compter du troisième.
+  variations:
+    - si: enfants à charge <= 2
+      alors: enfants à charge * 0.5
+    - sinon: 1 + (enfants à charge - 2)
+  références:
+    "CGI, art. 194": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033817781
+    "BOFiP, BOI-IR-LIQ-10-20-20-10 (majorations de quotient familial)": https://bofip.impots.gouv.fr/bofip/2028-PGP.html/identifiant=BOI-IR-LIQ-10-20-20-10-20140326
+
+foyer . parts:
+  titre: Nombre de parts du quotient familial
+  valeur: parts de base + parts enfants
+  références:
+    "CGI, art. 193 (principe du quotient familial)": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033844057
+    "CGI, art. 194": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033817781
+    "BOFiP, BOI-IR-LIQ-10 (détermination du quotient familial)": https://bofip.impots.gouv.fr/bofip/6516-PGP.html/identifiant=BOI-IR-LIQ-10-20200206
+
+foyer . demi parts supplémentaires:
+  titre: Nombre de demi-parts au-delà des parts de base
+  valeur: (parts - parts de base) / 0.5
+
+impôt:
+  titre: Impôt sur le revenu 2026 (revenus 2025)
+
+impôt . quotient familial:
+  titre: Revenu imposable par part
+  valeur: foyer . revenu net imposable / foyer . parts
+  références:
+    "CGI, art. 193": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033844057
+
+impôt . droits simples:
+  titre: Impôt issu du barème, quotient familial complet
+  description: >-
+    Barème progressif appliqué au revenu par part, multiplié par le nombre de
+    parts (le mécanisme `multiplicateur` est équivalent).
+  barème:
+    assiette: foyer . revenu net imposable
+    multiplicateur: foyer . parts
+    tranches: &tranches-2026
+      - taux: 0%
+        plafond: 11600 €
+      - taux: 11%
+        plafond: 29579 €
+      - taux: 30%
+        plafond: 84577 €
+      - taux: 41%
+        plafond: 181917 €
+      - taux: 45%
+  références:
+    "CGI, art. 197, I-1 (barème)": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . hors quotient enfants:
+  titre: Impôt calculé sur les seules parts de base
+  description: >-
+    Même barème, appliqué sans les demi-parts additionnelles. Sert au calcul du
+    plafonnement de l'avantage du quotient familial.
+  barème:
+    assiette: foyer . revenu net imposable
+    multiplicateur: foyer . parts de base
+    tranches: *tranches-2026
+  références:
+    "CGI, art. 197, I-2 (plafonnement)": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . avantage quotient familial:
+  valeur: hors quotient enfants - droits simples
+
+impôt . plafond de l'avantage:
+  titre: Plafond de l'avantage du quotient familial
+  description: 1 807 € par demi-part supplémentaire (LF 2026).
+  valeur: foyer . demi parts supplémentaires * 1807 €
+  références:
+    "CGI, art. 197, I-2": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . plafonnement applicable:
+  valeur: avantage quotient familial > plafond de l'avantage
+
+impôt . brut:
+  titre: Impôt brut (après plafonnement du quotient familial)
+  arrondi: oui
+  variations:
+    - si: plafonnement applicable
+      alors: hors quotient enfants - plafond de l'avantage
+    - sinon: droits simples
+  références:
+    "CGI, art. 197, I-2": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . décote:
+  titre: Décote
+  description: >-
+    Réduit l'impôt des foyers faiblement imposés : différence entre un forfait
+    (897 € seul, 1 483 € couple) et 45,25 % de l'impôt brut, sans pouvoir être
+    négative ni dépasser l'impôt.
+  valeur: forfait - 45.25% * impôt . brut
+  plancher: 0 €
+  arrondi: oui
+  références:
+    "CGI, art. 197, I-4-a (décote)": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . décote . forfait:
+  variations:
+    - si: foyer . imposition commune
+      alors: 1483 €
+    - sinon: 897 €
+  références:
+    "CGI, art. 197, I-4-a": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . net:
+  titre: Impôt net dû (avant réductions et crédits d'impôt)
+  valeur: brut - décote
+  plancher: 0 €
+  références:
+    "CGI, art. 197": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954
+
+impôt . taux moyen:
+  titre: Taux moyen d'imposition
+  applicable si: foyer . revenu net imposable > 0 €
+  valeur: net / foyer . revenu net imposable
+
+impôt . taux marginal:
+  titre: Tranche marginale d'imposition (TMI)
+  description: Taux de la dernière tranche du barème atteinte par le revenu par part.
+  variations:
+    - si: quotient familial > 181917 €
+      alors: 45%
+    - si: quotient familial > 84577 €
+      alors: 41%
+    - si: quotient familial > 29579 €
+      alors: 30%
+    - si: quotient familial > 11600 €
+      alors: 11%
+    - sinon: 0%
+  références:
+    "CGI, art. 197, I-1": https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051212954

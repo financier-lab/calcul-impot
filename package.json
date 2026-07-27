@@ -1,0 +1,38 @@
+{
+  "name": "calcul-impot",
+  "version": "0.1.0",
+  "description": "Simulateurs fiscaux français open source — règles publicodes citées article par article (CGI, BOFiP), testées contre une implémentation de référence.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/financier-lab/calcul-impot"
+  },
+  "homepage": "https://calcul-impot.com",
+  "keywords": [
+    "impôt",
+    "impot",
+    "fiscalité",
+    "france",
+    "publicodes",
+    "simulateur",
+    "barème",
+    "quotient familial"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "publicodes": "^1.10.1",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
