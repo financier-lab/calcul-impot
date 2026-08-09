@@ -19,7 +19,10 @@
     "publicodes",
     "simulateur",
     "barème",
-    "quotient familial"
+    "quotient familial",
+    "frontalier",
+    "suisse",
+    "impôt à la source"
   ],
   "scripts": {
     "test": "vitest run",

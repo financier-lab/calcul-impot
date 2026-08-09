@@ -31,10 +31,15 @@ qui documente chaque barème avec sa référence au JORF.
 | Module | Règles | Périmètre |
 |---|---|---|
 | Impôt sur le revenu 2026 (revenus 2025) | [`regles/impot-revenu/2026.yaml`](regles/impot-revenu/2026.yaml) | Barème progressif, quotient familial (parts standard), plafonnement de l'avantage, décote |
+| Frontalier franco-suisse 2026 | [`src/frontalier-suisse.ts`](src/frontalier-suisse.ts) | Accord de 1983 (impôt en France) vs impôt à la source (barème officiel GE 2026 embarqué, [`src/data/geneve-baremes-2026.ts`](src/data/geneve-baremes-2026.ts)), cotisations suisses part salarié (AVS/AC/AANP/LPP), CMU frontalier vs LAMal, contrefactuel entre les deux régimes |
+
+Le barème genevois est ingéré depuis le fichier officiel ESTV
+([tar26ge.zip](https://www.estv2.admin.ch/qst/2026/loehne/tar26ge.zip)) et
+régénérable à l'identique : [`scripts/generate-geneve-baremes.py`](scripts/generate-geneve-baremes.py).
 
 À venir (feuille de route) : plus-values immobilières, PFU vs barème, droits de
 succession et donation, IFI, prélèvement à la source, impôt belge (IPP) et
-comparateurs transfrontaliers (Suisse, Luxembourg, Belgique, Andorre).
+autres comparateurs transfrontaliers (Luxembourg, Belgique, Andorre).
 
 ### Limites du périmètre actuel
 
@@ -43,6 +48,12 @@ invalidité / anciens combattants, réductions et crédits d'impôt, contributio
 exceptionnelle sur les hauts revenus. Le résultat est l'impôt **avant**
 réductions et crédits d'impôt. Pour une situation complète, le
 [simulateur officiel de la DGFiP](https://www.impots.gouv.fr/simulateurs) fait foi.
+
+Le module frontalier (v1) ne modélise pas : statut de quasi-résident genevois
+(TOU), impôt sur la fortune, rachats LPP et 3e pilier, barèmes source des
+cantons hors accord autres que Genève, année d'arrivée ou de départ en cours
+d'année. Le télétravail (seuils 40 % fiscal / 50 % social) déclenche des
+avertissements mais n'entre pas dans le calcul.
 
 ## Utilisation
 
@@ -69,6 +80,24 @@ engine.setSituation({ "foyer . revenu net imposable": "60000 €" });
 engine.evaluate("impôt . net");
 ```
 
+Frontalier franco-suisse — le résultat inclut toujours le contrefactuel
+(même salaire sous l'autre régime) :
+
+```ts
+import { frontalierSuisse } from "calcul-impot";
+
+const r = frontalierSuisse({
+  cantonTravail: "GE", // ou VD, VS, NE, JU, BE, SO, BS, BL (accord 1983)
+  salaireBrutCHF: 90_000,
+  situation: "seul",
+  assuranceMaladie: "CMU",
+});
+// r.resultat      → régime source GE : retenue suisse (barème A0, 12,33 %),
+//                   impôt français résiduel, cotisation CMU, net final EUR
+// r.contrefactuel → le même poste sous le régime de l'accord de 1983
+// r.avertissements → télétravail, nuitées, CSG sur revenus du patrimoine…
+```
+
 ## Validation
 
 - Les cas de référence sont vérifiés à l'euro près contre une implémentation
@@ -86,6 +115,13 @@ engine.evaluate("impôt . net");
 - [CGI, art. 193](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033844057) et [art. 194](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000033817781) — quotient familial et parts
 - [Barèmes IPP](https://www.ipp.eu/en/ipp-tax-and-benefit-tables/) — historique des paramètres socio-fiscaux, référencé au JORF
 - [BOFiP](https://bofip.impots.gouv.fr/) — doctrine administrative
+
+Frontalier franco-suisse :
+
+- [Convention fiscale franco-suisse de 1966, art. 25 A](https://bofip.impots.gouv.fr/bofip/3592-PGP.html/identifiant%3DBOI-INT-CVB-CHE-10-20-60-20230222) (BOI-INT-CVB-CHE-10-20-60) — élimination de la double imposition, crédit d'impôt
+- [impots.gouv.fr — « Je suis frontalier franco-suisse »](https://www.impots.gouv.fr/particulier/questions/je-suis-frontalier-franco-suisse-ou-dois-je-payer-mes-impots) — accord de 1983 vs imposition à la source
+- [ESTV — barèmes de l'impôt à la source 2026](https://www.estv.admin.ch/estv/fr/accueil/impot-federal-direct/impot-a-la-source.html) — fichier officiel `tar26ge` (canton de Genève)
+- [URSSAF/CNTFS — assurance maladie des frontaliers](https://www.urssaf.fr/accueil/particulier/frontalier-suisse.html) — cotisation 8 % sur le RFR N−2 après abattement
 
 Une erreur, un paramètre obsolète, un article mal cité ? Ouvrez une issue —
 c'est exactement ce pour quoi ce dépôt est public.
