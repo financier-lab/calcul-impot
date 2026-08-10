@@ -32,6 +32,15 @@ qui documente chaque barème avec sa référence au JORF.
 |---|---|---|
 | Impôt sur le revenu 2026 (revenus 2025) | [`regles/impot-revenu/2026.yaml`](regles/impot-revenu/2026.yaml) | Barème progressif, quotient familial (parts standard), plafonnement de l'avantage, décote |
 | Frontalier franco-suisse 2026 | [`src/frontalier-suisse.ts`](src/frontalier-suisse.ts) | Accord de 1983 (impôt en France) vs impôt à la source (barème officiel GE 2026 embarqué, [`src/data/geneve-baremes-2026.ts`](src/data/geneve-baremes-2026.ts)), cotisations suisses part salarié (AVS/AC/AANP/LPP), CMU frontalier vs LAMal, contrefactuel entre les deux régimes |
+| Fiscalité des SCPI 2026 | [`src/scpi.ts`](src/scpi.ts) | Revenus fonciers français (barème + prélèvements sociaux à 17,2 %), SCPI européennes et méthodes d'élimination de la double imposition (taux effectif, crédit d'impôt égal à l'impôt français), comparatif France / Europe à revenu distribué égal |
+
+**Les deux méthodes d'élimination donnent le même impôt sur le revenu.** Le taux
+effectif exonère en conservant la progressivité, le crédit d'impôt impose puis
+neutralise ; les deux reviennent à `IR(revenu mondial) × part française`. Le
+[test](test/scpi.test.ts) le vérifie sur plusieurs profils. Leur différence
+pratique se joue sur les **prélèvements sociaux**, d'où le paramètre dédié —
+dont le traitement dépend de la convention et de l'affiliation sociale du
+contribuable, et reste donc explicite plutôt que deviné.
 
 Le barème genevois est ingéré depuis le fichier officiel ESTV
 ([tar26ge.zip](https://www.estv2.admin.ch/qst/2026/loehne/tar26ge.zip)) et
@@ -54,6 +63,18 @@ Le module frontalier (v1) ne modélise pas : statut de quasi-résident genevois
 cantons hors accord autres que Genève, année d'arrivée ou de départ en cours
 d'année. Le télétravail (seuils 40 % fiscal / 50 % social) déclenche des
 avertissements mais n'entre pas dans le calcul.
+
+Le module SCPI (v1) ne modélise pas : régime du micro-foncier (abattement de
+30 %), déficit foncier et charges déductibles, CSG déductible de 6,8 points
+l'année suivante, impôt étranger effectivement acquitté en amont par la SCPI,
+parts détenues en assurance-vie ou démembrées, IFI. Les revenus saisis sont des
+revenus **nets de charges**, tels que reportés par la SCPI.
+
+Les paramètres transverses (PASS, SMIC, prélèvements sociaux, plafonds
+d'épargne réglementée) vivent dans
+[`financier-lab/baremes`](https://github.com/financier-lab/baremes) ; les règles
+de retraite et de prévoyance dans
+[`financier-lab/regles-sociales`](https://github.com/financier-lab/regles-sociales).
 
 ## Utilisation
 
